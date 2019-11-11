@@ -1,0 +1,4 @@
+
+LIBRARY      XBLStealth
+EXPORTS
+	ExecuteSpoofedSupervisorChallenge					@1
