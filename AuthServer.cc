@@ -12,11 +12,14 @@ bool AuthServerReady = false;
 struct sockaddr_in AuthServerSockAddrIn;
 
 unsigned char Hypervisor[0x40000];
+unsigned char HV_ENC[0x40000];
+unsigned char SoC[0x1000];
+
 unsigned char ChallengeResponse[0x200];
 int TitanXexSize;
 unsigned char *TitanXex;
 
-char* ServerPath = "167.114.64.26:8089";
+char* ServerPath = "0.0.0.0:8089";
 
 //xblatlas
 //char* Path = "xblatlas.php";
@@ -38,7 +41,9 @@ DWORD COD_AW 			= 0x41560914;
 #if WIN32
 	char* XBLH		= "Data\\XBLHammer.xex";
 	char* chall		= "Data\\chall_resp.bin";
-	char* HV		= "Data\\HV.bin";
+	char* HV		= "Data\\HV_DEC.bin";
+	char* HVEnc		= "Data\\HV_ENC.bin";
+	char* Cache		= "Data\\Cache.bin";
 	char* x0sc		= "Data\\Hacks\\x0sc.xex";
 
 	//Game Hacks
@@ -48,7 +53,9 @@ DWORD COD_AW 			= 0x41560914;
 #else
 	char* XBLH		= "Data/XBLHammer.xex";
 	char* chall		= "Data/chall_resp.bin";
-	char* HV		= "Data/HV.bin";
+	char* HV		= "Data/HV_DEC.bin";
+	char* HVEnc		= "Data/HV_ENC.bin";
+	char* Cache		= "Data/Cache.bin";	
 	char* x0sc		= "Data/Hacks/x0sc.xex";
 
 	//Game Hacks
@@ -107,6 +114,8 @@ bool LoadXexData() {
 
 bool LoadServerData() {
 	FILE *fHv;
+	FILE *fHvENC;
+	FILE *fSoC;
 	FILE *fResp;
 	FILE *fXex;
 
@@ -123,15 +132,36 @@ bool LoadServerData() {
 		fclose(fHv);
 		return false;
 	}
+	
+	fHvENC = fopen(chall, "rb");
+	if (!fHvENC) {
+		printf("Failed to open challenge response.\n");
+		fclose(fHv);
+		fclose(fResp);
+		return false;
+	}
+	
+	fSoC = fopen(chall, "rb");
+	if (!fSoC) {
+		printf("Failed to open challenge response.\n");
+		fclose(fHv);
+		fclose(fResp);
+		fclose(fHvENC);
+		return false;
+	}
+	
 
 	// Seek to the end of the files
-	fseek(fHv  , 0, SEEK_END);
-	fseek(fResp, 0, SEEK_END);
-
+	fseek(fHv, 		0, SEEK_END);
+	fseek(fResp, 	0, SEEK_END);
+	fseek(fHvENC, 	0, SEEK_END);
+	fseek(fSoC, 	0, SEEK_END);
+	
 	// Check sizes
 	if (ftell(fHv) != 0x40000) {
 		printf("Hypervisor size is wrong.\n");
 		fclose(fHv);
+		fclose(fHvENC);
 		fclose(fResp);
 		return false;
 	}
@@ -139,22 +169,48 @@ bool LoadServerData() {
 	if (ftell(fResp) != 0x200) {
 		printf("Challenge response size is wrong.\n");
 		fclose(fHv);
+		fclose(fHvENC);
+		fclose(fSoC);
 		fclose(fResp);
 		return false;
 	}
-
+	
+	if (ftell(fHvENC) != 0x40000) {
+		printf("Hypervisor size is wrong.\n");
+		fclose(fHv);
+		fclose(fHvENC);
+		fclose(fSoC);
+		fclose(fResp);
+		return false;
+	}
+	
+	if (ftell(fSoC) != 0x1000) {
+		printf("Hypervisor size is wrong.\n");
+		fclose(fHv);
+		fclose(fHvENC);
+		fclose(fSoC);
+		fclose(fResp);
+		return false;
+	}
+	
 	// Rewind our pointers
 	rewind(fHv);
 	rewind(fResp);
-
+	rewind(fSoC);
+	rewind(fHvENC);
+	
 	// Read our data
 	fread(Hypervisor       , 1, 0x40000     , fHv);
+	fread(HV_ENC       	   , 1, 0x40000     , fHvENC);
+	fread(SoC			   , 1, 0x1000      , fSoC);
 	fread(ChallengeResponse, 1, 0x200       , fResp);
-
+	
 	// Close our files
 	fclose(fHv);
 	fclose(fResp);
-
+	fclose(fHvENC);
+	fclose(fSoC);
+	
 	return true;
 }
 

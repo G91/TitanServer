@@ -25,28 +25,32 @@ void DoRc4(void *Data, int Length) {
 	free(OutData);
 }
 
-void ECC_Chal(void *OutHash){
+//generate HV security hash generated on SOC memory hash
+void ECC_Chal(void *OutHash, byte* checksum){
 	extern unsigned char Hypervisor[];
+	extern unsigned char HV_ENC[];
+	extern unsigned char SoC[];
 	SHA_CTX ShaContext;
 	SHA1_Init(&ShaContext);
 
-	SHA1_Update(&ShaContext, Hypervisor + 0x1F810, 0x2);
-	SHA1_Update(&ShaContext, Hypervisor + 0xB4, 	0xC);
-	SHA1_Update(&ShaContext, Hypervisor + 0xC0, 	0x30);
+	SHA1_Update(&ShaContext, checksum, 	0x2);
+	SHA1_Update(&ShaContext, Hypervisor + 0x34, 	0xC);
+	SHA1_Update(&ShaContext, Hypervisor + 0x40, 	0x30);
 	SHA1_Update(&ShaContext, Hypervisor + 0xF0, 	0x4);
 	SHA1_Update(&ShaContext, Hypervisor + 0xF8, 	0x8);
-	SHA1_Update(&ShaContext, Hypervisor + 0x10000, 0x3FE);
-	SHA1_Update(&ShaContext, Hypervisor + 0x10140, 0x40);
-	SHA1_Update(&ShaContext, Hypervisor + 0x103d0, 0x30);
-	SHA1_Update(&ShaContext, Hypervisor + 0x16100, 0x176);
-	SHA1_Update(&ShaContext, Hypervisor + 0x16180, 0x40);
-	SHA1_Update(&ShaContext, Hypervisor + 0x16DA0, 0x60);
-	SHA1_Update(&ShaContext, Hypervisor + 0x20000, 0x24A);
-	SHA1_Update(&ShaContext, Hypervisor + 0x30000, 0x400);
-	SHA1_Update(&ShaContext, Hypervisor + 0x40000, 0x400);
+	SHA1_Update(&ShaContext, SoC 		+ 0x2, 		0x3FE);
+	SHA1_Update(&ShaContext, HV_ENC 	+ 0x100C0, 	0x40);
+	SHA1_Update(&ShaContext, HV_ENC 	+ 0x10350, 	0x30);
+	SHA1_Update(&ShaContext, SoC 		+ 0x40E, 	0x17C);
+	SHA1_Update(&ShaContext, HV_ENC 	+ 0x16280,	0x40);
+	SHA1_Update(&ShaContext, HV_ENC 	+ 0x16EA0, 	0x60);
+	SHA1_Update(&ShaContext, SoC 		+ 0x5BC, 	0x244);
+	SHA1_Update(&ShaContext, SoC 		+ 0x800, 	0x400);
+	SHA1_Update(&ShaContext, SoC 		+ 0xC00, 	0x400);
 	SHA1_Final((unsigned char*)OutHash, &ShaContext);
 }
 
+//generate 100F0 off cache file
 void ECC(){
 	char FileName[512];
 	unsigned int Digest[5];
@@ -94,6 +98,7 @@ void ECC(){
 	fclose(f);
 }
 
+//Generate HV Challenge Hash
 void DoCreateChallengeResponse(void *OutHash, void *Salt) {
 	extern unsigned char Hypervisor[];
 	SHA_CTX ShaContext;
@@ -101,12 +106,12 @@ void DoCreateChallengeResponse(void *OutHash, void *Salt) {
 
 	SHA1_Update(&ShaContext, Salt                , 0x10);
 	SHA1_Update(&ShaContext, Hypervisor + 0x34	  ,0x40);
-	SHA1_Update(&ShaContext, Hypervisor + 0x78   , 0xF88);
+	SHA1_Update(&ShaContext, Hypervisor + 0x78   , 0xFF88);
 	SHA1_Update(&ShaContext, Hypervisor + 0x100C0, 0x40);
-	SHA1_Update(&ShaContext, Hypervisor + 0x10350, 0xDF0);
-	SHA1_Update(&ShaContext, Hypervisor + 0x16D20, 0x2E0);
-	SHA1_Update(&ShaContext, Hypervisor + 0x20000, 0xFFC);
-	SHA1_Update(&ShaContext, Hypervisor + 0x30000, 0xFFC);
+	SHA1_Update(&ShaContext, Hypervisor + 0x10350, 0x5F70);
+	SHA1_Update(&ShaContext, Hypervisor + 0x16EA0, 0x9160);
+	SHA1_Update(&ShaContext, Hypervisor + 0x20000, 0xFFFF);
+	SHA1_Update(&ShaContext, Hypervisor + 0x30000, 0xFFFF);
 	SHA1_Final((unsigned char*)OutHash, &ShaContext);
 }
 

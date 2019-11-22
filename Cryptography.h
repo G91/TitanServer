@@ -10,5 +10,5 @@ void DoSha1(void *Data, int Length, void *Out);
 void DoRc4(void *Data, int Length);
 void DoCreateChallengeResponse(void *OutHash, void *Salt);
 bool CheckXexChallenge(void *Salt, void *Challenge);
-void ECC_Chal(void *OutHash);
+void ECC_Chal(void *OutHash, byte* checksum);
 #endif
